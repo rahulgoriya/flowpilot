@@ -1,10 +1,13 @@
 package flowpilot.service;
 
+import flowpilot.dto.CustomerRequest;
+import flowpilot.dto.CustomerResponse;
 import flowpilot.entity.Customer;
 import flowpilot.repository.CustomerRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomerService {
@@ -15,29 +18,60 @@ public class CustomerService {
         this.customerRepository = customerRepository;
     }
 
-    public Customer createCustomer(Customer customer) {
-        return customerRepository.save(customer);
+    public CustomerResponse createCustomer(CustomerRequest request) {
+        Customer customer = toEntity(request);
+        Customer saved = customerRepository.save(customer);
+        return toResponse(saved);
     }
 
-    public List<Customer> getAllCustomers() {
-        return customerRepository.findAll();
+    public List<CustomerResponse> getAllCustomers() {
+        return customerRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
-    public Customer getCustomerById(Long id) {
-        return customerRepository.findById(id)
+    public CustomerResponse getCustomerById(Long id) {
+        Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+        return toResponse(customer);
     }
 
-    public Customer updateCustomer(Long id, Customer updated) {
-        Customer existing = getCustomerById(id);
-        existing.setName(updated.getName());
-        existing.setEmail(updated.getEmail());
-        existing.setPhone(updated.getPhone());
-        return customerRepository.save(existing);
+    public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
+        Customer existing = customerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+
+        existing.setName(request.getName());
+        existing.setEmail(request.getEmail());
+        existing.setPhone(request.getPhone());
+
+        Customer updated = customerRepository.save(existing);
+        return toResponse(updated);
     }
 
     public void deleteCustomer(Long id) {
-        Customer customer = getCustomerById(id);
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
         customerRepository.delete(customer);
+    }
+
+    // ---- Mapping helpers ----
+
+    private Customer toEntity(CustomerRequest request) {
+        Customer customer = new Customer();
+        customer.setName(request.getName());
+        customer.setEmail(request.getEmail());
+        customer.setPhone(request.getPhone());
+        return customer;
+    }
+
+    private CustomerResponse toResponse(Customer customer) {
+        return new CustomerResponse(
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail(),
+                customer.getPhone(),
+                customer.getCreatedAt()
+        );
     }
 }

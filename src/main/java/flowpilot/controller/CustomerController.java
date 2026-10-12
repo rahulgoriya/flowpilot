@@ -1,6 +1,7 @@
 package flowpilot.controller;
 
-import flowpilot.entity.Customer;
+import flowpilot.dto.CustomerRequest;
+import flowpilot.dto.CustomerResponse;
 import flowpilot.service.CustomerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,24 +20,24 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<Customer> create(@RequestBody Customer customer) {
-        Customer saved = customerService.createCustomer(customer);
+    public ResponseEntity<CustomerResponse> create(@RequestBody CustomerRequest request) {
+        CustomerResponse saved = customerService.createCustomer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @GetMapping
-    public List<Customer> getAll() {
+    public List<CustomerResponse> getAll() {
         return customerService.getAllCustomers();
     }
 
     @GetMapping("/{id}")
-    public Customer getById(@PathVariable Long id) {
+    public CustomerResponse getById(@PathVariable Long id) {
         return customerService.getCustomerById(id);
     }
 
     @PutMapping("/{id}")
-    public Customer update(@PathVariable Long id, @RequestBody Customer customer) {
-        return customerService.updateCustomer(id, customer);
+    public CustomerResponse update(@PathVariable Long id, @RequestBody CustomerRequest request) {
+        return customerService.updateCustomer(id, request);
     }
 
     @DeleteMapping("/{id}")
