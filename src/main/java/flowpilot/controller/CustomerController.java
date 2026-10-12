@@ -3,6 +3,7 @@ package flowpilot.controller;
 import flowpilot.dto.CustomerRequest;
 import flowpilot.dto.CustomerResponse;
 import flowpilot.service.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<CustomerResponse> create(@RequestBody CustomerRequest request) {
+    public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
         CustomerResponse saved = customerService.createCustomer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
@@ -36,7 +37,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public CustomerResponse update(@PathVariable Long id, @RequestBody CustomerRequest request) {
+    public CustomerResponse update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
         return customerService.updateCustomer(id, request);
     }
 

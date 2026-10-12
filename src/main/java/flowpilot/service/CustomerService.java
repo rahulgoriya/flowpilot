@@ -3,6 +3,8 @@ package flowpilot.service;
 import flowpilot.dto.CustomerRequest;
 import flowpilot.dto.CustomerResponse;
 import flowpilot.entity.Customer;
+import flowpilot.exception.CustomerNotFoundException;
+import flowpilot.exception.DuplicateEmailException;
 import flowpilot.repository.CustomerRepository;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,12 @@ public class CustomerService {
     }
 
     public CustomerResponse createCustomer(CustomerRequest request) {
+        // Check for duplicate email BEFORE insert
+        customerRepository.findByEmail(request.getEmail())
+                .ifPresent(existing -> {
+                    throw new DuplicateEmailException(request.getEmail());
+                });
+
         Customer customer = toEntity(request);
         Customer saved = customerRepository.save(customer);
         return toResponse(saved);
@@ -33,13 +41,21 @@ public class CustomerService {
 
     public CustomerResponse getCustomerById(Long id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+                .orElseThrow(() -> new CustomerNotFoundException(id));
         return toResponse(customer);
     }
 
     public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
         Customer existing = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+                .orElseThrow(() -> new CustomerNotFoundException(id));
+
+        // If email is being changed, check for duplicate
+        if (!existing.getEmail().equals(request.getEmail())) {
+            customerRepository.findByEmail(request.getEmail())
+                    .ifPresent(other -> {
+                        throw new DuplicateEmailException(request.getEmail());
+                    });
+        }
 
         existing.setName(request.getName());
         existing.setEmail(request.getEmail());
@@ -51,7 +67,7 @@ public class CustomerService {
 
     public void deleteCustomer(Long id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+                .orElseThrow(() -> new CustomerNotFoundException(id));
         customerRepository.delete(customer);
     }
 
