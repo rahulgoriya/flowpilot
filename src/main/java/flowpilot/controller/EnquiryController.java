@@ -2,6 +2,7 @@ package flowpilot.controller;
 
 import flowpilot.dto.EnquiryRequest;
 import flowpilot.dto.EnquiryResponse;
+import flowpilot.dto.EnquirySummaryResponse;
 import flowpilot.service.EnquiryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,7 @@ public class EnquiryController {
     }
 
     @GetMapping
-    public List<EnquiryResponse> getAll() {
+    public List<EnquirySummaryResponse> getAll() {
         return enquiryService.getAllEnquiries();
     }
 
@@ -37,7 +38,7 @@ public class EnquiryController {
     }
 
     @GetMapping("/by-customer/{customerId}")
-    public List<EnquiryResponse> getByCustomer(@PathVariable Long customerId) {
+    public List<EnquirySummaryResponse> getByCustomer(@PathVariable Long customerId) {
         return enquiryService.getEnquiriesByCustomer(customerId);
     }
 }

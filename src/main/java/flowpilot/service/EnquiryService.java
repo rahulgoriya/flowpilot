@@ -2,6 +2,7 @@ package flowpilot.service;
 
 import flowpilot.dto.EnquiryRequest;
 import flowpilot.dto.EnquiryResponse;
+import flowpilot.dto.EnquirySummaryResponse;
 import flowpilot.entity.Customer;
 import flowpilot.entity.Enquiry;
 import flowpilot.exception.CustomerNotFoundException;
@@ -34,10 +35,10 @@ public class EnquiryService {
         return toResponse(saved);
     }
 
-    public List<EnquiryResponse> getAllEnquiries() {
+    public List<EnquirySummaryResponse> getAllEnquiries() {
         return enquiryRepository.findAllWithCustomerOrderByCreatedAtDesc()
                 .stream()
-                .map(this::toResponse)
+                .map(this::toSummary)
                 .collect(Collectors.toList());
     }
 
@@ -47,19 +48,18 @@ public class EnquiryService {
         return toResponse(enquiry);
     }
 
-    public List<EnquiryResponse> getEnquiriesByCustomer(Long customerId) {
-        // Verify customer exists first — gives a friendly 404 if not
+    public List<EnquirySummaryResponse> getEnquiriesByCustomer(Long customerId) {
         if (!customerRepository.existsById(customerId)) {
             throw new CustomerNotFoundException(customerId);
         }
 
         return enquiryRepository.findByCustomerIdWithCustomer(customerId)
                 .stream()
-                .map(this::toResponse)
+                .map(this::toSummary)
                 .collect(Collectors.toList());
     }
 
-    // ---- Mapping helper ----
+    // ---- Detail mapping ----
 
     private EnquiryResponse toResponse(Enquiry enquiry) {
         return new EnquiryResponse(
@@ -71,5 +71,24 @@ public class EnquiryService {
                 enquiry.getCreatedAt(),
                 enquiry.getUpdatedAt()
         );
+    }
+
+    // ---- Summary mapping ----
+
+    private EnquirySummaryResponse toSummary(Enquiry enquiry) {
+        return new EnquirySummaryResponse(
+                enquiry.getId(),
+                enquiry.getCustomer().getId(),
+                enquiry.getCustomer().getName(),
+                truncateMessage(enquiry.getRawMessage()),
+                enquiry.getStatus(),
+                enquiry.getCreatedAt()
+        );
+    }
+
+    private String truncateMessage(String message) {
+        if (message == null) return null;
+        if (message.length() <= 80) return message;
+        return message.substring(0, 80) + "...";
     }
 }
