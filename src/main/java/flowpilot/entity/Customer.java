@@ -2,6 +2,8 @@ package flowpilot.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "customers")
@@ -22,6 +24,10 @@ public class Customer {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // ---- Relationship: One Customer has many Enquiries ----
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Enquiry> enquiries = new ArrayList<>();
 
     // Constructors
     public Customer() {
@@ -55,4 +61,7 @@ public class Customer {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public List<Enquiry> getEnquiries() { return enquiries; }
+    public void setEnquiries(List<Enquiry> enquiries) { this.enquiries = enquiries; }
 }
