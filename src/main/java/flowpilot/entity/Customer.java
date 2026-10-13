@@ -25,13 +25,10 @@ public class Customer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // ---- Relationship: One Customer has many Enquiries ----
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Enquiry> enquiries = new ArrayList<>();
 
-    // Constructors
     public Customer() {
-        // Required by JPA
     }
 
     public Customer(String name, String email, String phone) {
@@ -40,13 +37,21 @@ public class Customer {
         this.phone = phone;
     }
 
-    // Automatically set createdAt before insert
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    public void addEnquiry(Enquiry enquiry) {
+        enquiries.add(enquiry);
+        enquiry.setCustomer(this);
+    }
+
+    public void removeEnquiry(Enquiry enquiry) {
+        enquiries.remove(enquiry);
+        enquiry.setCustomer(null);
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -64,4 +69,22 @@ public class Customer {
 
     public List<Enquiry> getEnquiries() { return enquiries; }
     public void setEnquiries(List<Enquiry> enquiries) { this.enquiries = enquiries; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Customer)) return false;
+        Customer other = (Customer) o;
+        return id != null && id.equals(other.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{id=" + id + ", name='" + name + "', email='" + email + "'}";
+    }
 }

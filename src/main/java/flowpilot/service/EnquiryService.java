@@ -35,14 +35,14 @@ public class EnquiryService {
     }
 
     public List<EnquiryResponse> getAllEnquiries() {
-        return enquiryRepository.findAllByOrderByCreatedAtDesc()
+        return enquiryRepository.findAllWithCustomerOrderByCreatedAtDesc()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     public EnquiryResponse getEnquiryById(Long id) {
-        Enquiry enquiry = enquiryRepository.findById(id)
+        Enquiry enquiry = enquiryRepository.findByIdWithCustomer(id)
                 .orElseThrow(() -> new EnquiryNotFoundException(id));
         return toResponse(enquiry);
     }
@@ -53,7 +53,7 @@ public class EnquiryService {
             throw new CustomerNotFoundException(customerId);
         }
 
-        return enquiryRepository.findByCustomerId(customerId)
+        return enquiryRepository.findByCustomerIdWithCustomer(customerId)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());

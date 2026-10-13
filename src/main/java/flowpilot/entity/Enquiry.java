@@ -29,7 +29,6 @@ public class Enquiry {
     private LocalDateTime updatedAt;
 
     public Enquiry() {
-        // Required by JPA
     }
 
     public Enquiry(Customer customer, String rawMessage) {
@@ -53,7 +52,6 @@ public class Enquiry {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -71,4 +69,26 @@ public class Enquiry {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Enquiry)) return false;
+        Enquiry other = (Enquiry) o;
+        return id != null && id.equals(other.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Enquiry{id=" + id + ", status=" + status + ", rawMessage='"
+                + (rawMessage != null && rawMessage.length() > 30
+                    ? rawMessage.substring(0, 30) + "..."
+                    : rawMessage)
+                + "'}";
+    }
 }
