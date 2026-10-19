@@ -22,14 +22,31 @@ public class Enquiry {
     @Column(nullable = false, length = 20)
     private EnquiryStatus status;
 
+    @Column(name = "extracted_service_type", length = 50)
+    private String extractedServiceType;
+
+    @Column(name = "extracted_property_type", length = 50)
+    private String extractedPropertyType;
+
+    @Column(name = "extracted_bedrooms")
+    private Integer extractedBedrooms;
+
+    @Column(name = "extracted_location", length = 100)
+    private String extractedLocation;
+
+    @Column(name = "extracted_preferred_date_time", length = 100)
+    private String extractedPreferredDateTime;
+
+    @Column(name = "extracted_intent", length = 50)
+    private String extractedIntent;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public Enquiry() {
-    }
+    public Enquiry() {}
 
     public Enquiry(Customer customer, String rawMessage) {
         this.customer = customer;
@@ -70,25 +87,21 @@ public class Enquiry {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Enquiry)) return false;
-        Enquiry other = (Enquiry) o;
-        return id != null && id.equals(other.getId());
-    }
+    public String getExtractedServiceType() { return extractedServiceType; }
+    public void setExtractedServiceType(String extractedServiceType) { this.extractedServiceType = extractedServiceType; }
 
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    public String getExtractedPropertyType() { return extractedPropertyType; }
+    public void setExtractedPropertyType(String extractedPropertyType) { this.extractedPropertyType = extractedPropertyType; }
 
-    @Override
-    public String toString() {
-        return "Enquiry{id=" + id + ", status=" + status + ", rawMessage='"
-                + (rawMessage != null && rawMessage.length() > 30
-                    ? rawMessage.substring(0, 30) + "..."
-                    : rawMessage)
-                + "'}";
-    }
+    public Integer getExtractedBedrooms() { return extractedBedrooms; }
+    public void setExtractedBedrooms(Integer extractedBedrooms) { this.extractedBedrooms = extractedBedrooms; }
+
+    public String getExtractedLocation() { return extractedLocation; }
+    public void setExtractedLocation(String extractedLocation) { this.extractedLocation = extractedLocation; }
+
+    public String getExtractedPreferredDateTime() { return extractedPreferredDateTime; }
+    public void setExtractedPreferredDateTime(String extractedPreferredDateTime) { this.extractedPreferredDateTime = extractedPreferredDateTime; }
+
+    public String getExtractedIntent() { return extractedIntent; }
+    public void setExtractedIntent(String extractedIntent) { this.extractedIntent = extractedIntent; }
 }
