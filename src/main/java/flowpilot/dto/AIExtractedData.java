@@ -8,6 +8,9 @@ public class AIExtractedData {
     private String location;
     private String preferredDateTime;
     private String intent;
+    
+    // NEW: To store the exact JSON string the AI returned
+    private String rawJsonResponse;
 
     public AIExtractedData() {}
 
@@ -28,4 +31,7 @@ public class AIExtractedData {
 
     public String getIntent() { return intent; }
     public void setIntent(String intent) { this.intent = intent; }
+
+    public String getRawJsonResponse() { return rawJsonResponse; }
+    public void setRawJsonResponse(String rawJsonResponse) { this.rawJsonResponse = rawJsonResponse; }
 }

@@ -53,7 +53,13 @@ public class GeminiService {
                     .path("content").path("parts").get(0)
                     .path("text").asText();
 
-            return objectMapper.readValue(aiJsonString, AIExtractedData.class);
+            // Parse into DTO
+            AIExtractedData data = objectMapper.readValue(aiJsonString, AIExtractedData.class);
+            
+            // Save the exact JSON string for auditing
+            data.setRawJsonResponse(aiJsonString);
+
+            return data;
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to extract AI data: " + e.getMessage(), e);

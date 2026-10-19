@@ -40,6 +40,10 @@ public class Enquiry {
     @Column(name = "extracted_intent", length = 50)
     private String extractedIntent;
 
+    // NEW: Store the exact JSON for auditing
+    @Column(name = "ai_raw_response", columnDefinition = "TEXT")
+    private String aiRawResponse;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -104,4 +108,7 @@ public class Enquiry {
 
     public String getExtractedIntent() { return extractedIntent; }
     public void setExtractedIntent(String extractedIntent) { this.extractedIntent = extractedIntent; }
+
+    public String getAiRawResponse() { return aiRawResponse; }
+    public void setAiRawResponse(String aiRawResponse) { this.aiRawResponse = aiRawResponse; }
 }

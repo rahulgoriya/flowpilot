@@ -13,17 +13,19 @@ public class EnquiryResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
-    // AI Extracted fields
     private String extractedServiceType;
     private String extractedPropertyType;
     private Integer extractedBedrooms;
     private String extractedLocation;
     private String extractedPreferredDateTime;
     private String extractedIntent;
+    
+    // NEW: Added raw response to Response DTO
+    private String aiRawResponse;
 
     public EnquiryResponse() {}
 
-    public EnquiryResponse(Long id, Long customerId, String customerName, String rawMessage, EnquiryStatus status, LocalDateTime createdAt, LocalDateTime updatedAt, String extractedServiceType, String extractedPropertyType, Integer extractedBedrooms, String extractedLocation, String extractedPreferredDateTime, String extractedIntent) {
+    public EnquiryResponse(Long id, Long customerId, String customerName, String rawMessage, EnquiryStatus status, LocalDateTime createdAt, LocalDateTime updatedAt, String extractedServiceType, String extractedPropertyType, Integer extractedBedrooms, String extractedLocation, String extractedPreferredDateTime, String extractedIntent, String aiRawResponse) {
         this.id = id;
         this.customerId = customerId;
         this.customerName = customerName;
@@ -37,6 +39,7 @@ public class EnquiryResponse {
         this.extractedLocation = extractedLocation;
         this.extractedPreferredDateTime = extractedPreferredDateTime;
         this.extractedIntent = extractedIntent;
+        this.aiRawResponse = aiRawResponse;
     }
 
     public Long getId() { return id; }
@@ -77,4 +80,7 @@ public class EnquiryResponse {
 
     public String getExtractedIntent() { return extractedIntent; }
     public void setExtractedIntent(String extractedIntent) { this.extractedIntent = extractedIntent; }
+
+    public String getAiRawResponse() { return aiRawResponse; }
+    public void setAiRawResponse(String aiRawResponse) { this.aiRawResponse = aiRawResponse; }
 }
