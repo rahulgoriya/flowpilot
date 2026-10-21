@@ -17,11 +17,15 @@ import java.time.LocalDateTime;
 public class QuoteService {
 
     private final QuoteRepository quoteRepository;
-    private final EnquiryRepository enquiryRepository; // NEW: Needed for Orchestration
+    private final EnquiryRepository enquiryRepository;
+    private final BookingService bookingService; // NEW
 
-    public QuoteService(QuoteRepository quoteRepository, EnquiryRepository enquiryRepository) {
+    public QuoteService(QuoteRepository quoteRepository, 
+                        EnquiryRepository enquiryRepository,
+                        BookingService bookingService) { // NEW
         this.quoteRepository = quoteRepository;
         this.enquiryRepository = enquiryRepository;
+        this.bookingService = bookingService;
     }
 
     public QuoteResponse getQuoteById(Long id) {
@@ -30,10 +34,6 @@ public class QuoteService {
         return toResponse(quote);
     }
 
-    /**
-     * ORCHESTRATOR: Accepting a quote updates the Quote AND the Enquiry.
-     * The @Transactional ensures that if one fails, both roll back.
-     */
     @Transactional
     public QuoteResponse acceptQuote(Long id) {
         Quote quote = getValidPendingQuote(id);
@@ -47,18 +47,18 @@ public class QuoteService {
         enquiry.setStatus(EnquiryStatus.ACCEPTED);
         enquiryRepository.save(enquiry);
 
+        // 3. AUTOMATION: Create the Booking!
+        bookingService.createBookingFromQuote(savedQuote);
+
         return toResponse(savedQuote);
     }
 
     @Transactional
     public QuoteResponse rejectQuote(Long id) {
         Quote quote = getValidPendingQuote(id);
-        
-        // 1. Update Quote Status
         quote.setStatus(QuoteStatus.REJECTED);
         Quote savedQuote = quoteRepository.save(quote);
 
-        // 2. Update the Parent Enquiry Status
         Enquiry enquiry = savedQuote.getEnquiry();
         enquiry.setStatus(EnquiryStatus.REJECTED);
         enquiryRepository.save(enquiry);
