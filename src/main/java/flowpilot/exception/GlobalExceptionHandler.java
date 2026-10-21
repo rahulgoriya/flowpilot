@@ -28,9 +28,25 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
-        @ExceptionHandler(EnquiryNotFoundException.class)
+
+    @ExceptionHandler(EnquiryNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEnquiryNotFound(
             EnquiryNotFoundException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(QuoteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleQuoteNotFound(
+            QuoteNotFoundException ex,
             HttpServletRequest request) {
 
         ErrorResponse error = new ErrorResponse(
@@ -58,12 +74,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    // NEW: Handle Booking Conflict (Day 26)
+    @ExceptionHandler(BookingConflictException.class)
+    public ResponseEntity<ErrorResponse> handleBookingConflict(
+            BookingConflictException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        // Collect all field errors into one message
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
