@@ -18,6 +18,7 @@ import flowpilot.repository.QuoteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,13 +32,13 @@ public class EnquiryService {
     private final CustomerRepository customerRepository;
     private final GeminiService geminiService;
     private final PricingService pricingService;
-    private final QuoteRepository quoteRepository; // NEW: Injected QuoteRepository
+    private final QuoteRepository quoteRepository;
 
     public EnquiryService(EnquiryRepository enquiryRepository,
                           CustomerRepository customerRepository,
                           GeminiService geminiService,
                           PricingService pricingService,
-                          QuoteRepository quoteRepository) { // NEW
+                          QuoteRepository quoteRepository) {
         this.enquiryRepository = enquiryRepository;
         this.customerRepository = customerRepository;
         this.geminiService = geminiService;
@@ -58,8 +59,10 @@ public class EnquiryService {
     }
 
     /**
-     * Generates a Quote and saves it to the database.
+     * Generates a Quote, saves it to the database, and updates the Enquiry status.
+     * @Transactional ensures that if updating the Enquiry fails, the Quote is NOT saved (Rollback).
      */
+    @Transactional
     public QuoteResponse generateQuote(Long enquiryId) {
         Enquiry enquiry = enquiryRepository.findById(enquiryId)
                 .orElseThrow(() -> new EnquiryNotFoundException(enquiryId));
@@ -73,9 +76,13 @@ public class EnquiryService {
                 enquiry.getExtractedServiceType()
         );
 
-        // NEW: Save the Quote to the Database
+        // 1. Save the Quote to the Database
         Quote quote = new Quote(enquiry, priceCalc.getBasePrice(), priceCalc.getAddOnPrice(), priceCalc.getTotalPrice());
         Quote savedQuote = quoteRepository.save(quote);
+
+        // 2. Update the Enquiry Status to QUOTED
+        enquiry.setStatus(EnquiryStatus.QUOTED);
+        enquiryRepository.save(enquiry);
 
         // Return the full QuoteResponse including DB fields (id, status, expiresAt)
         return new QuoteResponse(

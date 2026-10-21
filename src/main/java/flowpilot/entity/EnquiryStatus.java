@@ -7,5 +7,5 @@ public enum EnquiryStatus {
     ACCEPTED,
     REJECTED,
     BOOKED,
-    AI_FAILED  // NEW: Added for Day 18
+    AI_FAILED
 }

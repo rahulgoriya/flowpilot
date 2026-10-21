@@ -2,11 +2,14 @@ package flowpilot.service;
 
 import flowpilot.dto.QuoteResponse;
 import flowpilot.entity.Enquiry;
+import flowpilot.entity.EnquiryStatus;
 import flowpilot.entity.Quote;
 import flowpilot.entity.QuoteStatus;
 import flowpilot.exception.QuoteNotFoundException;
+import flowpilot.repository.EnquiryRepository;
 import flowpilot.repository.QuoteRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -14,9 +17,11 @@ import java.time.LocalDateTime;
 public class QuoteService {
 
     private final QuoteRepository quoteRepository;
+    private final EnquiryRepository enquiryRepository; // NEW: Needed for Orchestration
 
-    public QuoteService(QuoteRepository quoteRepository) {
+    public QuoteService(QuoteRepository quoteRepository, EnquiryRepository enquiryRepository) {
         this.quoteRepository = quoteRepository;
+        this.enquiryRepository = enquiryRepository;
     }
 
     public QuoteResponse getQuoteById(Long id) {
@@ -25,21 +30,42 @@ public class QuoteService {
         return toResponse(quote);
     }
 
+    /**
+     * ORCHESTRATOR: Accepting a quote updates the Quote AND the Enquiry.
+     * The @Transactional ensures that if one fails, both roll back.
+     */
+    @Transactional
     public QuoteResponse acceptQuote(Long id) {
         Quote quote = getValidPendingQuote(id);
+        
+        // 1. Update Quote Status
         quote.setStatus(QuoteStatus.ACCEPTED);
-        Quote saved = quoteRepository.save(quote);
-        return toResponse(saved);
+        Quote savedQuote = quoteRepository.save(quote);
+
+        // 2. Update the Parent Enquiry Status
+        Enquiry enquiry = savedQuote.getEnquiry();
+        enquiry.setStatus(EnquiryStatus.ACCEPTED);
+        enquiryRepository.save(enquiry);
+
+        return toResponse(savedQuote);
     }
 
+    @Transactional
     public QuoteResponse rejectQuote(Long id) {
         Quote quote = getValidPendingQuote(id);
+        
+        // 1. Update Quote Status
         quote.setStatus(QuoteStatus.REJECTED);
-        Quote saved = quoteRepository.save(quote);
-        return toResponse(saved);
+        Quote savedQuote = quoteRepository.save(quote);
+
+        // 2. Update the Parent Enquiry Status
+        Enquiry enquiry = savedQuote.getEnquiry();
+        enquiry.setStatus(EnquiryStatus.REJECTED);
+        enquiryRepository.save(enquiry);
+
+        return toResponse(savedQuote);
     }
 
-    // Helper method to ensure the quote exists, is PENDING, and is not expired
     private Quote getValidPendingQuote(Long id) {
         Quote quote = quoteRepository.findById(id)
                 .orElseThrow(() -> new QuoteNotFoundException(id));
@@ -57,7 +83,6 @@ public class QuoteService {
         return quote;
     }
 
-    // Helper to map Entity to DTO
     private QuoteResponse toResponse(Quote quote) {
         Enquiry enquiry = quote.getEnquiry();
         return new QuoteResponse(
