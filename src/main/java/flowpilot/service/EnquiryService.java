@@ -9,10 +9,12 @@ import flowpilot.dto.QuoteResponse;
 import flowpilot.entity.Customer;
 import flowpilot.entity.Enquiry;
 import flowpilot.entity.EnquiryStatus;
+import flowpilot.entity.Quote;
 import flowpilot.exception.CustomerNotFoundException;
 import flowpilot.exception.EnquiryNotFoundException;
 import flowpilot.repository.CustomerRepository;
 import flowpilot.repository.EnquiryRepository;
+import flowpilot.repository.QuoteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,21 +30,21 @@ public class EnquiryService {
     private final EnquiryRepository enquiryRepository;
     private final CustomerRepository customerRepository;
     private final GeminiService geminiService;
-    private final PricingService pricingService; // NEW: Injected Pricing Service
+    private final PricingService pricingService;
+    private final QuoteRepository quoteRepository; // NEW: Injected QuoteRepository
 
     public EnquiryService(EnquiryRepository enquiryRepository,
                           CustomerRepository customerRepository,
                           GeminiService geminiService,
-                          PricingService pricingService) { // NEW: Added to constructor
+                          PricingService pricingService,
+                          QuoteRepository quoteRepository) { // NEW
         this.enquiryRepository = enquiryRepository;
         this.customerRepository = customerRepository;
         this.geminiService = geminiService;
         this.pricingService = pricingService;
+        this.quoteRepository = quoteRepository;
     }
 
-    /**
-     * ORCHESTRATOR: Reads like a story.
-     */
     public EnquiryResponse createEnquiry(EnquiryRequest request) {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new CustomerNotFoundException(request.getCustomerId()));
@@ -56,13 +58,12 @@ public class EnquiryService {
     }
 
     /**
-     * NEW: Generates a Quote for a specific Enquiry using deterministic pricing.
+     * Generates a Quote and saves it to the database.
      */
     public QuoteResponse generateQuote(Long enquiryId) {
         Enquiry enquiry = enquiryRepository.findById(enquiryId)
                 .orElseThrow(() -> new EnquiryNotFoundException(enquiryId));
 
-        // Safety check: Only allow quotes for fully extracted enquiries
         if (enquiry.getStatus() != EnquiryStatus.EXTRACTED) {
             throw new RuntimeException("Cannot generate quote. Enquiry status is: " + enquiry.getStatus());
         }
@@ -72,7 +73,21 @@ public class EnquiryService {
                 enquiry.getExtractedServiceType()
         );
 
-        return new QuoteResponse(enquiry.getId(), priceCalc.getTotalPrice(), priceCalc.getBreakdown());
+        // NEW: Save the Quote to the Database
+        Quote quote = new Quote(enquiry, priceCalc.getBasePrice(), priceCalc.getAddOnPrice(), priceCalc.getTotalPrice());
+        Quote savedQuote = quoteRepository.save(quote);
+
+        // Return the full QuoteResponse including DB fields (id, status, expiresAt)
+        return new QuoteResponse(
+                savedQuote.getId(),
+                enquiry.getId(),
+                savedQuote.getSubtotal(),
+                savedQuote.getAddOns(),
+                savedQuote.getTotalAmount(),
+                savedQuote.getStatus(),
+                savedQuote.getExpiresAt(),
+                priceCalc.getBreakdown()
+        );
     }
 
     private void processAIExtraction(Enquiry enquiry) {

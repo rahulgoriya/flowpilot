@@ -2,6 +2,8 @@ package flowpilot.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "enquiries")
@@ -40,9 +42,12 @@ public class Enquiry {
     @Column(name = "extracted_intent", length = 50)
     private String extractedIntent;
 
-    // NEW: Store the exact JSON for auditing
     @Column(name = "ai_raw_response", columnDefinition = "TEXT")
     private String aiRawResponse;
+
+    // NEW: Relationship with Quote
+    @OneToMany(mappedBy = "enquiry", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Quote> quotes = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -111,4 +116,7 @@ public class Enquiry {
 
     public String getAiRawResponse() { return aiRawResponse; }
     public void setAiRawResponse(String aiRawResponse) { this.aiRawResponse = aiRawResponse; }
+
+    public List<Quote> getQuotes() { return quotes; }
+    public void setQuotes(List<Quote> quotes) { this.quotes = quotes; }
 }
