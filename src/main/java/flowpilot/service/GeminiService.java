@@ -3,6 +3,8 @@ package flowpilot.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import flowpilot.dto.AIExtractedData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,8 @@ import java.util.Map;
 
 @Service
 public class GeminiService {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -53,16 +57,15 @@ public class GeminiService {
                     .path("content").path("parts").get(0)
                     .path("text").asText();
 
-            // Parse into DTO
             AIExtractedData data = objectMapper.readValue(aiJsonString, AIExtractedData.class);
-            
-            // Save the exact JSON string for auditing
             data.setRawJsonResponse(aiJsonString);
 
             return data;
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to extract AI data: " + e.getMessage(), e);
+            // Log the error, then throw it so EnquiryService can handle it
+            log.error("AI Extraction failed for message: {}", customerMessage, e);
+            throw new RuntimeException("AI extraction failed", e);
         }
     }
 
