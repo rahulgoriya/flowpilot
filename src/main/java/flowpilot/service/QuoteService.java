@@ -1,5 +1,5 @@
 package flowpilot.service;
-
+import flowpilot.exception.BookingConflictException;
 import flowpilot.dto.QuoteResponse;
 import flowpilot.entity.Enquiry;
 import flowpilot.entity.EnquiryStatus;
@@ -70,9 +70,10 @@ public class QuoteService {
         Quote quote = quoteRepository.findById(id)
                 .orElseThrow(() -> new QuoteNotFoundException(id));
 
-        if (quote.getStatus() != QuoteStatus.PENDING) {
-            throw new RuntimeException("Cannot modify quote. Current status is: " + quote.getStatus());
-        }
+       if (quote.getStatus() != QuoteStatus.PENDING) {
+    // Use a custom exception that maps to 409 Conflict
+    throw new BookingConflictException("Quote is already " + quote.getStatus() + ". Cannot accept again.");
+}
 
         if (quote.getExpiresAt().isBefore(LocalDateTime.now())) {
             quote.setStatus(QuoteStatus.EXPIRED);
