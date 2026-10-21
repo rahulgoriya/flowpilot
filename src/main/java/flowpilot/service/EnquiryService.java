@@ -4,6 +4,8 @@ import flowpilot.dto.AIExtractedData;
 import flowpilot.dto.EnquiryRequest;
 import flowpilot.dto.EnquiryResponse;
 import flowpilot.dto.EnquirySummaryResponse;
+import flowpilot.dto.PriceCalculation;
+import flowpilot.dto.QuoteResponse;
 import flowpilot.entity.Customer;
 import flowpilot.entity.Enquiry;
 import flowpilot.entity.EnquiryStatus;
@@ -26,43 +28,57 @@ public class EnquiryService {
     private final EnquiryRepository enquiryRepository;
     private final CustomerRepository customerRepository;
     private final GeminiService geminiService;
+    private final PricingService pricingService; // NEW: Injected Pricing Service
 
     public EnquiryService(EnquiryRepository enquiryRepository,
                           CustomerRepository customerRepository,
-                          GeminiService geminiService) {
+                          GeminiService geminiService,
+                          PricingService pricingService) { // NEW: Added to constructor
         this.enquiryRepository = enquiryRepository;
         this.customerRepository = customerRepository;
         this.geminiService = geminiService;
+        this.pricingService = pricingService;
     }
 
     /**
      * ORCHESTRATOR: Reads like a story.
      */
     public EnquiryResponse createEnquiry(EnquiryRequest request) {
-        // 1. Fetch Customer (Verify existence)
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new CustomerNotFoundException(request.getCustomerId()));
 
-        // 2. Create Entity
         Enquiry enquiry = new Enquiry(customer, request.getRawMessage());
 
-        // 3. Delegate AI Processing
         processAIExtraction(enquiry);
 
-        // 4. Save and Return
         Enquiry saved = enquiryRepository.save(enquiry);
         return toResponse(saved);
     }
 
     /**
-     * HELPER: Handles the messy AI logic and fallback.
-     * By separating this, createEnquiry() remains clean.
+     * NEW: Generates a Quote for a specific Enquiry using deterministic pricing.
      */
+    public QuoteResponse generateQuote(Long enquiryId) {
+        Enquiry enquiry = enquiryRepository.findById(enquiryId)
+                .orElseThrow(() -> new EnquiryNotFoundException(enquiryId));
+
+        // Safety check: Only allow quotes for fully extracted enquiries
+        if (enquiry.getStatus() != EnquiryStatus.EXTRACTED) {
+            throw new RuntimeException("Cannot generate quote. Enquiry status is: " + enquiry.getStatus());
+        }
+
+        PriceCalculation priceCalc = pricingService.calculatePrice(
+                enquiry.getExtractedPropertyType(), 
+                enquiry.getExtractedServiceType()
+        );
+
+        return new QuoteResponse(enquiry.getId(), priceCalc.getTotalPrice(), priceCalc.getBreakdown());
+    }
+
     private void processAIExtraction(Enquiry enquiry) {
         try {
             AIExtractedData extractedData = geminiService.extractEnquiryData(enquiry.getRawMessage());
 
-            // Map AI data to Entity (with normalization)
             enquiry.setExtractedServiceType(normalize(extractedData.getServiceType()));
             enquiry.setExtractedPropertyType(normalize(extractedData.getPropertyType()));
             enquiry.setExtractedBedrooms(extractedData.getBedrooms());
@@ -74,7 +90,6 @@ public class EnquiryService {
             enquiry.setStatus(EnquiryStatus.EXTRACTED);
 
         } catch (Exception e) {
-            // Fallback Safety Net
             log.warn("AI failed for message: {}. Saving as AI_FAILED.", enquiry.getRawMessage());
             enquiry.setStatus(EnquiryStatus.AI_FAILED);
             enquiry.setAiRawResponse("{\"error\": \"" + e.getMessage() + "\"}");
@@ -105,7 +120,6 @@ public class EnquiryService {
                 .collect(Collectors.toList());
     }
 
-    // Helper: Normalizes empty AI strings to null
     private String normalize(String value) {
         if (value == null || value.trim().isEmpty() || value.equalsIgnoreCase("null")) {
             return null;
@@ -113,7 +127,6 @@ public class EnquiryService {
         return value;
     }
 
-    // Helper: Entity to DTO Mapping
     private EnquiryResponse toResponse(Enquiry enquiry) {
         return new EnquiryResponse(
                 enquiry.getId(),
@@ -133,7 +146,6 @@ public class EnquiryService {
         );
     }
 
-    // Helper: Entity to Summary DTO
     private EnquirySummaryResponse toSummary(Enquiry enquiry) {
         return new EnquirySummaryResponse(
                 enquiry.getId(),

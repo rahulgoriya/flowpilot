@@ -3,6 +3,7 @@ package flowpilot.controller;
 import flowpilot.dto.EnquiryRequest;
 import flowpilot.dto.EnquiryResponse;
 import flowpilot.dto.EnquirySummaryResponse;
+import flowpilot.dto.QuoteResponse;
 import flowpilot.service.EnquiryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -40,5 +41,11 @@ public class EnquiryController {
     @GetMapping("/by-customer/{customerId}")
     public List<EnquirySummaryResponse> getByCustomer(@PathVariable Long customerId) {
         return enquiryService.getEnquiriesByCustomer(customerId);
+    }
+
+    // 👇 NEW: Day 20 Quote Endpoint
+    @GetMapping("/{id}/quote")
+    public QuoteResponse getQuote(@PathVariable Long id) {
+        return enquiryService.generateQuote(id);
     }
 }
