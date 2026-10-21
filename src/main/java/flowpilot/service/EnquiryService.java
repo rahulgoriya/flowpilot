@@ -35,17 +35,34 @@ public class EnquiryService {
         this.geminiService = geminiService;
     }
 
+    /**
+     * ORCHESTRATOR: Reads like a story.
+     */
     public EnquiryResponse createEnquiry(EnquiryRequest request) {
+        // 1. Fetch Customer (Verify existence)
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new CustomerNotFoundException(request.getCustomerId()));
 
+        // 2. Create Entity
         Enquiry enquiry = new Enquiry(customer, request.getRawMessage());
 
-        try {
-            // Attempt AI Extraction
-            AIExtractedData extractedData = geminiService.extractEnquiryData(request.getRawMessage());
+        // 3. Delegate AI Processing
+        processAIExtraction(enquiry);
 
-            // If successful, map and update status
+        // 4. Save and Return
+        Enquiry saved = enquiryRepository.save(enquiry);
+        return toResponse(saved);
+    }
+
+    /**
+     * HELPER: Handles the messy AI logic and fallback.
+     * By separating this, createEnquiry() remains clean.
+     */
+    private void processAIExtraction(Enquiry enquiry) {
+        try {
+            AIExtractedData extractedData = geminiService.extractEnquiryData(enquiry.getRawMessage());
+
+            // Map AI data to Entity (with normalization)
             enquiry.setExtractedServiceType(normalize(extractedData.getServiceType()));
             enquiry.setExtractedPropertyType(normalize(extractedData.getPropertyType()));
             enquiry.setExtractedBedrooms(extractedData.getBedrooms());
@@ -54,20 +71,14 @@ public class EnquiryService {
             enquiry.setExtractedIntent(normalize(extractedData.getIntent()));
             
             enquiry.setAiRawResponse(extractedData.getRawJsonResponse());
-            enquiry.setStatus(EnquiryStatus.EXTRACTED); // AI extraction successful!
+            enquiry.setStatus(EnquiryStatus.EXTRACTED);
 
         } catch (Exception e) {
-            // FALLBACK: AI failed, but we still save the enquiry!
-            log.warn("AI failed, saving enquiry with AI_FAILED status. Message: {}", request.getRawMessage());
-            
+            // Fallback Safety Net
+            log.warn("AI failed for message: {}. Saving as AI_FAILED.", enquiry.getRawMessage());
             enquiry.setStatus(EnquiryStatus.AI_FAILED);
             enquiry.setAiRawResponse("{\"error\": \"" + e.getMessage() + "\"}");
-            // We leave the extracted fields as null
         }
-
-        // Save to DB whether AI succeeded or failed
-        Enquiry saved = enquiryRepository.save(enquiry);
-        return toResponse(saved);
     }
 
     public List<EnquirySummaryResponse> getAllEnquiries() {
@@ -94,6 +105,7 @@ public class EnquiryService {
                 .collect(Collectors.toList());
     }
 
+    // Helper: Normalizes empty AI strings to null
     private String normalize(String value) {
         if (value == null || value.trim().isEmpty() || value.equalsIgnoreCase("null")) {
             return null;
@@ -101,6 +113,7 @@ public class EnquiryService {
         return value;
     }
 
+    // Helper: Entity to DTO Mapping
     private EnquiryResponse toResponse(Enquiry enquiry) {
         return new EnquiryResponse(
                 enquiry.getId(),
@@ -120,6 +133,7 @@ public class EnquiryService {
         );
     }
 
+    // Helper: Entity to Summary DTO
     private EnquirySummaryResponse toSummary(Enquiry enquiry) {
         return new EnquirySummaryResponse(
                 enquiry.getId(),
