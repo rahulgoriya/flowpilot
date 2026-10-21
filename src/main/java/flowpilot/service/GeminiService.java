@@ -24,8 +24,12 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    @Value("${gemini.api.url}")
-    private String apiUrl;
+    // We will try these models in order. If one fails, we try the next.
+    private final String[] models = {
+        "gemini-3.8-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-2.0-flash"
+    };
 
     public GeminiService() {
         this.restClient = RestClient.create();
@@ -43,30 +47,73 @@ public class GeminiService {
             )
         );
 
-        try {
-            String rawResponse = restClient.post()
-                    .uri(apiUrl)
-                    .header("x-goog-api-key", apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(String.class);
+        // 1. Try AI Models with Retries
+        for (String model : models) {
+            for (int attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    log.info("Attempting AI extraction using model: {} (Attempt {})", model, attempt);
+                    
+                    String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
+                    
+                    String rawResponse = restClient.post()
+                            .uri(apiUrl)
+                            .header("x-goog-api-key", apiKey)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(requestBody)
+                            .retrieve()
+                            .body(String.class);
 
-            JsonNode root = objectMapper.readTree(rawResponse);
-            String aiJsonString = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
+                    JsonNode root = objectMapper.readTree(rawResponse);
+                    String aiJsonString = root.path("candidates").get(0)
+                            .path("content").path("parts").get(0)
+                            .path("text").asText();
 
-            AIExtractedData data = objectMapper.readValue(aiJsonString, AIExtractedData.class);
-            data.setRawJsonResponse(aiJsonString);
+                    AIExtractedData data = objectMapper.readValue(aiJsonString, AIExtractedData.class);
+                    data.setRawJsonResponse(aiJsonString);
+                    
+                    return data; // Success!
 
-            return data;
-
-        } catch (Exception e) {
-            // Log the error, then throw it so EnquiryService can handle it
-            log.error("AI Extraction failed for message: {}", customerMessage, e);
-            throw new RuntimeException("AI extraction failed", e);
+                } catch (Exception e) {
+                    log.warn("Model {} failed on attempt {}: {}", model, attempt, e.getMessage());
+                    // Wait 1 second before retrying (to avoid rate limits)
+                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                }
+            }
         }
+
+        // 2. If all AI models fail, use the Smart Keyword Fallback
+        log.error("All AI models failed. Using Keyword Fallback.");
+        return fallbackExtraction(customerMessage);
+    }
+
+    // --- SMART FALLBACK (If AI is completely down) ---
+    private AIExtractedData fallbackExtraction(String message) {
+        AIExtractedData data = new AIExtractedData();
+        String lower = message.toLowerCase();
+
+        // Basic Keyword Matching
+        if (lower.contains("1bhk")) data.setPropertyType("1BHK");
+        else if (lower.contains("2bhk")) data.setPropertyType("2BHK");
+        else if (lower.contains("3bhk")) data.setPropertyType("3BHK");
+        else if (lower.contains("4bhk")) data.setPropertyType("4BHK");
+        else if (lower.contains("office")) data.setPropertyType("office");
+
+        if (lower.contains("deep clean")) data.setServiceType("deep clean");
+        else if (lower.contains("regular")) data.setServiceType("regular clean");
+        else if (lower.contains("sofa")) data.setServiceType("sofa cleaning");
+        else if (lower.contains("office")) data.setServiceType("office cleaning");
+
+        // Basic intent detection
+        if (lower.contains("quote") || lower.contains("price") || lower.contains("how much")) {
+            data.setIntent("inquiry");
+        } else if (lower.contains("angry") || lower.contains("bad") || lower.contains("complaint")) {
+            data.setIntent("complaint");
+        } else {
+            data.setIntent("booking");
+        }
+
+        data.setRawJsonResponse("{\"fallback\": true}");
+        return data;
     }
 
     private String buildPrompt(String message) {

@@ -1,7 +1,6 @@
 package flowpilot.entity;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,6 +37,10 @@ public class Quote {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // NEW: One-to-One relationship with Booking
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
+    private Booking booking;
 
     public Quote() {}
 
@@ -89,4 +92,8 @@ public class Quote {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    // NEW: Getter and Setter for Booking
+    public Booking getBooking() { return booking; }
+    public void setBooking(Booking booking) { this.booking = booking; }
 }
