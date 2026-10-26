@@ -175,7 +175,9 @@ public class EnquiryService {
                 enquiry.getCustomer().getName(),
                 truncateMessage(enquiry.getRawMessage()),
                 enquiry.getStatus(),
-                enquiry.getCreatedAt()
+                enquiry.getCreatedAt(),
+                enquiry.getExtractedServiceType(), // NEW: Added for frontend UI
+                enquiry.getExtractedPropertyType()  // NEW: Added for frontend UI
         );
     }
 

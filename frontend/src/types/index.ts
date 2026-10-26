@@ -9,7 +9,8 @@ export interface Enquiry {
   id: number;
   customerId: number;
   customerName: string;
-  rawMessage: string;
+  messagePreview?: string; // Add this for list
+  rawMessage?: string;
   status: string;
   createdAt: string;
   extractedServiceType: string | null;
@@ -18,4 +19,14 @@ export interface Enquiry {
   extractedLocation: string | null;
   extractedPreferredDateTime: string | null;
   extractedIntent: string | null;
+}
+export interface Quote {
+  quoteId: number;
+  enquiryId: number;
+  subtotal: number;
+  addOns: number;
+  totalAmount: number;
+  status: string;
+  expiresAt: string;
+  breakdown: string;
 }

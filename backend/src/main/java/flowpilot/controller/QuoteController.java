@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/quotes")
+@CrossOrigin(origins = "http://localhost:5173") // NEW: Allows React frontend to connect
 public class QuoteController {
 
     private final QuoteService quoteService;

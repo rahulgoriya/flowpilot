@@ -42,4 +42,25 @@ export const api = {
     }
     return response.json();
   },
+
+  // --- Quotes ---
+  generateQuote: async (enquiryId: number) => {
+    const response = await fetch(`${BASE_URL}/enquiries/${enquiryId}/quote`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to generate quote');
+    }
+    return response.json();
+  },
+
+  acceptQuote: async (quoteId: number) => {
+    const response = await fetch(`${BASE_URL}/quotes/${quoteId}/accept`, {
+      method: 'PATCH',
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to accept quote');
+    }
+    return response.json();
+  },
 };

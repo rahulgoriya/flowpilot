@@ -19,21 +19,19 @@ public class PricingService {
     }
 
     private int calculateBasePrice(String propertyType) {
-        if (propertyType == null) return 2000;
-        
+        if (propertyType == null || propertyType.trim().isEmpty()) return 2000;
         return switch (propertyType.toUpperCase()) {
             case "1BHK" -> 1500;
             case "2BHK" -> 2500;
             case "3BHK" -> 3500;
             case "4BHK" -> 4500;
             case "OFFICE" -> 5000;
-            default -> 2000; // Fallback for unknown
+            default -> 2000;
         };
     }
 
     private int calculateAddOn(String serviceType) {
-        if (serviceType == null) return 0;
-
+        if (serviceType == null || serviceType.trim().isEmpty()) return 0;
         return switch (serviceType.toLowerCase()) {
             case "deep clean" -> 1000;
             case "sofa cleaning" -> 500;
