@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/enquiries")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173") // NEW: Allowed React to connect
 public class EnquiryController {
 
     private final EnquiryService enquiryService;
@@ -44,7 +44,6 @@ public class EnquiryController {
         return enquiryService.getEnquiriesByCustomer(customerId);
     }
 
-    // 👇 NEW: Day 20 Quote Endpoint
     @GetMapping("/{id}/quote")
     public QuoteResponse getQuote(@PathVariable Long id) {
         return enquiryService.generateQuote(id);

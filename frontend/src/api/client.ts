@@ -1,14 +1,13 @@
 const BASE_URL = 'http://localhost:8080/api';
 
 export const api = {
-  // GET Customers
+  // --- Customers ---
   getCustomers: async () => {
     const response = await fetch(`${BASE_URL}/customers`);
     if (!response.ok) throw new Error('Failed to fetch customers');
     return response.json();
   },
 
-  // POST Create Customer
   createCustomer: async (data: { name: string; email: string; phone: string }) => {
     const response = await fetch(`${BASE_URL}/customers`, {
       method: 'POST',
@@ -21,5 +20,26 @@ export const api = {
       throw new Error(errorData.message || 'Failed to create customer');
     }
     return response.json();
-  }
+  },
+
+  // --- Enquiries ---
+  getEnquiries: async () => {
+    const response = await fetch(`${BASE_URL}/enquiries`);
+    if (!response.ok) throw new Error('Failed to fetch enquiries');
+    return response.json();
+  },
+
+  createEnquiry: async (data: { customerId: number; rawMessage: string }) => {
+    const response = await fetch(`${BASE_URL}/enquiries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create enquiry');
+    }
+    return response.json();
+  },
 };

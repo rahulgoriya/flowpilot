@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -24,7 +25,7 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    // We will try these models in order. If one fails, we try the next.
+    // Try these models in order
     private final String[] models = {
         "gemini-3.8-flash",
         "gemini-3.1-flash-lite",
@@ -32,19 +33,19 @@ public class GeminiService {
     };
 
     public GeminiService() {
-        this.restClient = RestClient.create();
+        // NEW: Timeout set karo taaki API atke nahi
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(10000); // 10 seconds
+        requestFactory.setReadTimeout(10000);    // 10 seconds
+        
+        this.restClient = RestClient.builder().requestFactory(requestFactory).build();
         this.objectMapper = new ObjectMapper();
     }
 
     public AIExtractedData extractEnquiryData(String customerMessage) {
         String prompt = buildPrompt(customerMessage);
-
         Map<String, Object> requestBody = Map.of(
-            "contents", List.of(
-                Map.of("parts", List.of(
-                    Map.of("text", prompt)
-                ))
-            )
+            "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
         );
 
         // 1. Try AI Models with Retries
@@ -52,7 +53,6 @@ public class GeminiService {
             for (int attempt = 1; attempt <= 2; attempt++) {
                 try {
                     log.info("Attempting AI extraction using model: {} (Attempt {})", model, attempt);
-                    
                     String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
                     
                     String rawResponse = restClient.post()
@@ -70,28 +70,24 @@ public class GeminiService {
 
                     AIExtractedData data = objectMapper.readValue(aiJsonString, AIExtractedData.class);
                     data.setRawJsonResponse(aiJsonString);
-                    
-                    return data; // Success!
+                    return data;
 
                 } catch (Exception e) {
                     log.warn("Model {} failed on attempt {}: {}", model, attempt, e.getMessage());
-                    // Wait 1 second before retrying (to avoid rate limits)
                     try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
                 }
             }
         }
 
-        // 2. If all AI models fail, use the Smart Keyword Fallback
+        // 2. Fallback: If AI fails completely, extract keywords manually
         log.error("All AI models failed. Using Keyword Fallback.");
         return fallbackExtraction(customerMessage);
     }
 
-    // --- SMART FALLBACK (If AI is completely down) ---
     private AIExtractedData fallbackExtraction(String message) {
         AIExtractedData data = new AIExtractedData();
         String lower = message.toLowerCase();
 
-        // Basic Keyword Matching
         if (lower.contains("1bhk")) data.setPropertyType("1BHK");
         else if (lower.contains("2bhk")) data.setPropertyType("2BHK");
         else if (lower.contains("3bhk")) data.setPropertyType("3BHK");
@@ -103,14 +99,9 @@ public class GeminiService {
         else if (lower.contains("sofa")) data.setServiceType("sofa cleaning");
         else if (lower.contains("office")) data.setServiceType("office cleaning");
 
-        // Basic intent detection
-        if (lower.contains("quote") || lower.contains("price") || lower.contains("how much")) {
-            data.setIntent("inquiry");
-        } else if (lower.contains("angry") || lower.contains("bad") || lower.contains("complaint")) {
-            data.setIntent("complaint");
-        } else {
-            data.setIntent("booking");
-        }
+        if (lower.contains("quote") || lower.contains("price")) data.setIntent("inquiry");
+        else if (lower.contains("angry") || lower.contains("complaint")) data.setIntent("complaint");
+        else data.setIntent("booking");
 
         data.setRawJsonResponse("{\"fallback\": true}");
         return data;
@@ -131,8 +122,6 @@ public class GeminiService {
                 - intent (string: "booking", "inquiry", "complaint", or "other")
                 
                 Customer message: "%s"
-                
-                JSON Output:
                 """.formatted(message);
     }
 }
