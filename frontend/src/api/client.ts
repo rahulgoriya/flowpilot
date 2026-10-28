@@ -63,4 +63,10 @@ export const api = {
     }
     return response.json();
   },
+    // --- Bookings ---
+  getBookings: async () => {
+    const response = await fetch(`${BASE_URL}/bookings`);
+    if (!response.ok) throw new Error('Failed to fetch bookings');
+    return response.json();
+  },
 };

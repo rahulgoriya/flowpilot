@@ -30,3 +30,11 @@ export interface Quote {
   expiresAt: string;
   breakdown: string;
 }
+export interface Booking {
+  bookingId: number;
+  quoteId: number;
+  customerId: number;
+  customerName: string;
+  scheduledDateTime: string;
+  status: string;
+}
