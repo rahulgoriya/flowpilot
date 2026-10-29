@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Mail, Calendar } from 'lucide-react';
+import { LayoutDashboard, Users, Mail, Calendar, LogOut } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { logout } = useAuth(); // AuthContext se logout function liya
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -36,6 +38,7 @@ const Sidebar = () => {
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.5px' }}>FlowPilot</h2>
       </div>
       
+      {/* Navigation Links */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -58,7 +61,6 @@ const Sidebar = () => {
                 boxShadow: isActive ? '0 4px 14px rgba(79, 70, 229, 0.4)' : 'none',
                 transform: isActive ? 'translateX(4px)' : 'none'
               }}
-              // Add hover effect via JS (React state or simple CSS class if preferred)
               onMouseEnter={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
@@ -78,6 +80,38 @@ const Sidebar = () => {
           );
         })}
       </nav>
+
+      {/* Logout Button (Neeche fixed) */}
+      <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <button 
+          onClick={logout}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px 16px',
+            color: '#F87171', // Light Red color for logout
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            fontWeight: 500,
+            fontSize: '1rem',
+            transition: 'all 0.3s ease',
+            textAlign: 'left'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <LogOut size={20} />
+          Logout
+        </button>
+      </div>
     </div>
   );
 };

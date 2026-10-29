@@ -1,36 +1,33 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import DashboardLayout from './components/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Customers from './pages/Customers';
 import Enquiries from './pages/Enquiries';
 import Bookings from './pages/Bookings';
-import DashboardLayout from './components/DashboardLayout';
-
-// Helper: Check karega ki token hai ya nahi
-const isAuthenticated = () => {
-  return !!localStorage.getItem('token');
-};
+import Login from './pages/Login';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Route */}
-        <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Route */}
+          <Route path="/login" element={<Login />} />
 
-        {/* Protected Routes (Bina login ke andar nahi ja sakte) */}
-        <Route 
-          path="/" 
-          element={isAuthenticated() ? <DashboardLayout /> : <Navigate to="/login" />}
-        >
-          <Route index element={<Navigate to="/dashboard" />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="enquiries" element={<Enquiries />} />
-          <Route path="bookings" element={<Bookings />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<DashboardLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="enquiries" element={<Enquiries />} />
+              <Route path="bookings" element={<Bookings />} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

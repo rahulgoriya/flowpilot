@@ -1,8 +1,9 @@
 const BASE_URL = 'http://localhost:8080/api';
 
-// Yeh function har request ke liye token uthayega
+// Helper to get the token from localStorage
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token'); // Token local storage se nikal raha hai
+  // Make sure this matches the key used in AuthContext.tsx
+  const token = localStorage.getItem('flowpilot_token'); 
   return {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -10,10 +11,23 @@ const getAuthHeaders = () => {
 };
 
 export const api = {
+  // --- Authentication ---
+  login: async (data: { email: string; password: string }) => {
+    const response = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error('Invalid email or password');
+    }
+    return response.json();
+  },
+
   // --- Customers ---
   getCustomers: async () => {
     const response = await fetch(`${BASE_URL}/customers`, {
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch customers');
     return response.json();
@@ -22,7 +36,7 @@ export const api = {
   createCustomer: async (data: { name: string; email: string; phone: string }) => {
     const response = await fetch(`${BASE_URL}/customers`, {
       method: 'POST',
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     
@@ -36,7 +50,7 @@ export const api = {
   // --- Enquiries ---
   getEnquiries: async () => {
     const response = await fetch(`${BASE_URL}/enquiries`, {
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch enquiries');
     return response.json();
@@ -45,7 +59,7 @@ export const api = {
   createEnquiry: async (data: { customerId: number; rawMessage: string }) => {
     const response = await fetch(`${BASE_URL}/enquiries`, {
       method: 'POST',
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     
@@ -59,7 +73,7 @@ export const api = {
   // --- Quotes ---
   generateQuote: async (enquiryId: number) => {
     const response = await fetch(`${BASE_URL}/enquiries/${enquiryId}/quote`, {
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
     });
     if (!response.ok) {
       const errorData = await response.json();
@@ -71,7 +85,7 @@ export const api = {
   acceptQuote: async (quoteId: number) => {
     const response = await fetch(`${BASE_URL}/quotes/${quoteId}/accept`, {
       method: 'PATCH',
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
     });
     if (!response.ok) {
       const errorData = await response.json();
@@ -83,7 +97,7 @@ export const api = {
   // --- Bookings ---
   getBookings: async () => {
     const response = await fetch(`${BASE_URL}/bookings`, {
-      headers: getAuthHeaders(), // Token add kiya
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch bookings');
     return response.json();
